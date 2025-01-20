@@ -134,12 +134,14 @@ Config.Uniforms   = {
 		[2] = {
 			label = 'Bullet Wear', --outfitlabel for menu
 			ranks = { 0, 1, 2, 3 }, --ranks that can use this outfit table/number
+			armor = true,  -- to make sure this is armor to increase ped armor
 			male = {
 				bproof_1 = 11, bproof_2 = 1
 			},
 			female = {
 				bproof_1 = 13, bproof_2 = 1
-			}
+			},
+
 		},
 
 		[3] = {

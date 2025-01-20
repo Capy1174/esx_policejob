@@ -8,7 +8,7 @@ local playerPed = PlayerPedId()
 
 AddEventHandler('esx:playerPedChanged', function(newPed) playerPed = newPed end)
 
-function cleanPlayer()
+local function cleanPlayer()
 	SetPedArmour(playerPed, 0)
 	ClearPedBloodDamage(playerPed)
 	ResetPedVisibleDamage(playerPed)
@@ -16,7 +16,7 @@ function cleanPlayer()
 	ResetPedMovementClipset(playerPed, 0)
 end
 
-function setUniform(uniform)
+local function setUniform(uniform)
 	TriggerEvent('skinchanger:getSkin', function(skin)
 		local uniformObject
 		sex = (skin.sex == 0) and "male" or "female"
@@ -24,7 +24,7 @@ function setUniform(uniform)
 		if uniformObject then
 			TriggerEvent('skinchanger:loadClothes', skin, uniformObject)
 
-			if uniform == 'bullet_wear' then
+			if uniform.armor then
 				SetPedArmour(playerPed, 100)
 			end
 		else
@@ -33,11 +33,7 @@ function setUniform(uniform)
 	end)
 end
 
-RegisterCommand('capy', function()
-	OpenCloakroomMenu()
-end)
-
-function OpenCloakroomMenu()
+local function OpenCloakroomMenu()
 	local job = ESX.PlayerData.job.name
 	local grade = ESX.PlayerData.job.grade
 	local uniforms = Config.Uniforms[job]
@@ -48,7 +44,7 @@ function OpenCloakroomMenu()
 	if uniforms then
 		for index, data in pairs(uniforms) do
 			if data.ranks and ESX.Table.TableContains(data.ranks, grade) then
-				elements[#elements + 1] = { label = data.label or 'Name not found', value = index, type = 'uniform', uniforms = { male = data.male, female = data.female } }
+				elements[#elements + 1] = { label = data.label or 'Name not found', value = index, type = 'uniform', uniforms = { male = data.male, female = data.female, armor = data.armor or false } }
 			end
 		end
 	end
