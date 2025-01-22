@@ -108,42 +108,68 @@ local function OpenCloakroomMenu()
 end
 
 function OpenArmoryMenu(station)
-	local elements
 	if Config.OxInventory then
 		exports.ox_inventory:openInventory('stash', { id = 'society_police', owner = station })
 		return ESX.CloseContext()
-	else
-		elements = {
-			{ unselectable = true, icon = "fas fa-gun",                 title = TranslateCap('armory') },
-			{ icon = "fas fa-gun", title = TranslateCap('buy_weapons'), value = 'buy_weapons' }
-
-		}
-
-		if Config.EnableArmoryManagement then
-			table.insert(elements, { icon = "fas fa-gun", title = TranslateCap('get_weapon'), value = 'get_weapon' })
-			table.insert(elements, { icon = "fas fa-gun", title = TranslateCap('put_weapon'), value = 'put_weapon' })
-			table.insert(elements, { icon = "fas fa-box", title = TranslateCap('remove_object'), value = 'get_stock' })
-			table.insert(elements, { icon = "fas fa-box", title = TranslateCap('deposit_object'), value = 'put_stock' })
-		end
 	end
+	local elements = {
+		{ label = 'Weapon Management', value = 'weapon_management' },
+		{ label = 'Item Management',   value = 'item_management' },
 
-	ESX.OpenContext("right", elements, function(menu, element)
-		local data = { current = element }
-		if data.current.value == 'get_weapon' then
-			OpenGetWeaponMenu()
-		elseif data.current.value == 'put_weapon' then
-			OpenPutWeaponMenu()
-		elseif data.current.value == 'buy_weapons' then
-			OpenBuyWeaponsMenu()
-		elseif data.current.value == 'put_stock' then
-			OpenPutStocksMenu()
-		elseif data.current.value == 'get_stock' then
-			OpenGetStocksMenu()
+	}
+	ESX.UI.Menu.CloseAll()
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory', {
+		title    = _U('armory'),
+		align    = 'top-right',
+		elements = elements
+	}, function(data, menu)
+		if data.current.value == 'weapon_management' then
+			local elements2 = {
+				{ label = 'Buy Weapons',  value = 'buy_weapons' },
+				{ label = 'Get Weapon',   value = 'get_weapon' },
+				{ label = 'Store Weapon', value = 'store_weapon' },
+			}
+
+			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory_weapon_management', {
+				title    = 'Weapon Management',
+				align    = 'top-right',
+				elements = elements2
+			}, function(data2, menu2)
+				if data2.current.value == 'buy_weapons' then
+					OpenBuyWeaponsMenu()
+				elseif data2.current.value == 'get_weapon' then
+					OpenGetWeaponMenu()
+				elseif data2.current.value == 'store_weapon' then
+					OpenPutWeaponMenu()
+				end
+			end, function(data2, menu2)
+				menu2.close()
+			end)
+		elseif data.current.value == 'item_management' then
+			local elements2 = {
+				{ label = 'Buy Items',   value = 'buy_items' },
+				{ label = 'Get Items',   value = 'get_items' },
+				{ label = 'Store Items', value = 'store_items' },
+			}
+			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory_item_management', {
+				title    = 'Item Management',
+				align    = 'top-right',
+				elements = elements2
+			}, function(data2, menu2)
+				if data2.current.value == 'buy_items' then
+					OpenBuyItemsMenu()
+				elseif data2.current.value == 'get_items' then
+					OpenGetItemsMenu()
+				elseif data2.current.value == 'store_items' then
+					OpenPutItemsMenu()
+				end
+			end, function(data2, menu2)
+				menu2.close()
+			end)
 		end
-	end, function(menu)
-		CurrentAction     = 'menu_armory'
-		CurrentActionMsg  = TranslateCap('open_armory')
-		CurrentActionData = { station = station }
+	end, function(data, menu)
+		menu.close()
 	end)
 end
 
@@ -656,91 +682,101 @@ function OpenPutWeaponMenu()
 	end)
 end
 
-function OpenBuyWeaponsMenu()
-	local elements = {
-		{ unselectable = true, icon = "fas fa-gun", title = TranslateCap('armory_weapontitle') }
-	}
-	local playerPed = PlayerPedId()
+RegisterCommand('openmenow', function()
+	OpenBuyWeaponsMenu('Mission_Row')
+end)
 
-	for k, v in ipairs(Config.AuthorizedWeapons[ESX.PlayerData.job.grade_name]) do
-		local weaponNum, weapon = ESX.GetWeapon(v.weapon)
-		local components, label = {}
-		local hasWeapon = HasPedGotWeapon(playerPed, joaat(v.weapon), false)
+function OpenBuyWeaponsMenu(station)
+	if not station then return end
+	local elements = {}
+	local weapons = Config.PoliceStations[station].Armories.weapons
+	if #weapons < 1 then return ESX.ShowNotification("No Weapon Found") end
 
-		if v.components then
-			for i = 1, #v.components do
-				if v.components[i] then
-					local component = weapon.components[i]
-					local hasComponent = HasPedGotWeaponComponent(playerPed, joaat(v.weapon), component.hash)
+	for index, data in pairs(weapons) do
+		if data.name then
+			local weaponNum, weapon = ESX.GetWeapon(data.name)
+			local components, label = {}
+			local hasWeapon = HasPedGotWeapon(playerPed, GetHashKey(data.name), false)
 
-					if hasComponent then
-						label = ('%s: <span style="color:green;">%s</span>'):format(component.label, TranslateCap('armory_owned'))
-					else
-						if v.components[i] > 0 then
-							label = ('%s: <span style="color:green;">%s</span>'):format(component.label, TranslateCap('armory_item', ESX.Math.GroupDigits(v.components[i])))
+			if data.components then
+				for i = 1, #data.components do
+					if data.components[i] then
+						local component = weapon.components[i]
+						local hasComponent = HasPedGotWeaponComponent(playerPed, joaat(data.name), component.hash)
+
+						if hasComponent then
+							label = ('%s: <span style="color:green;">%s</span>'):format(component.label, _U('armory_owned'))
 						else
-							label = ('%s: <span style="color:green;">%s</span>'):format(component.label, TranslateCap('armory_free'))
+							if data.components[i] > 0 then
+								label = ('%s: <span style="color:green;">%s</span>'):format(component.label, _U('armory_item', ESX.Math.GroupDigits(data.components[i])))
+							else
+								label = ('%s: <span style="color:green;">%s</span>'):format(component.label, _U('armory_free'))
+							end
 						end
-					end
 
-					components[#components + 1] = {
-						icon = "fas fa-gun",
-						title = label,
-						componentLabel = component.label,
-						hash = component.hash,
-						name = component.name,
-						price = v.components[i],
-						hasComponent = hasComponent,
-						componentNum = i
-					}
+						components[#components + 1] = {
+							label = label,
+							componentLabel = component.label,
+							hash = component.hash,
+							name = component.name,
+							price = data.components[i],
+							hasComponent = hasComponent,
+							componentNum = i
+						}
+					end
 				end
 			end
-		end
 
-		if hasWeapon and v.components then
-			label = ('%s: <span style="color:green;">></span>'):format(weapon.label)
-		elseif hasWeapon and not v.components then
-			label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, TranslateCap('armory_owned'))
-		else
-			if v.price > 0 then
-				label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, TranslateCap('armory_item', ESX.Math.GroupDigits(v.price)))
+			if hasWeapon and data.components then
+				label = ('%s: <span style="color:green;">></span>'):format(weapon.label)
+			elseif hasWeapon and not data.components then
+				label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, _U('armory_owned'))
 			else
-				label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, TranslateCap('armory_free'))
-			end
-		end
-
-		elements[#elements + 1] = {
-			icon = "fas fa-gun",
-			title = label,
-			weaponLabel = weapon.label,
-			name = weapon.name,
-			components = components,
-			price = v.price,
-			hasWeapon = hasWeapon
-		}
-	end
-
-	ESX.OpenContext("right", elements, function(menu, element)
-		local data = { current = element }
-		if data.current.hasWeapon then
-			if #data.current.components > 0 then
-				OpenWeaponComponentShop(data.current.components, data.current.name, menu)
-			end
-		else
-			ESX.TriggerServerCallback('esx_policejob:buyWeapon', function(bought)
-				if bought then
-					if data.current.price > 0 then
-						ESX.ShowNotification(TranslateCap('armory_bought', data.current.weaponLabel, ESX.Math.GroupDigits(data.current.price)))
-					end
-
-					ESX.CloseContext()
-					OpenBuyWeaponsMenu()
+				if data.price > 0 then
+					label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, _U('armory_item', ESX.Math.GroupDigits(data.price)))
 				else
-					ESX.ShowNotification(TranslateCap('armory_money'))
+					label = ('%s: <span style="color:green;">%s</span>'):format(weapon.label, _U('armory_free'))
 				end
-			end, data.current.name, 1)
+			end
+
+
+			elements[#elements + 1] = {
+				label = label,
+				weaponLabel = weapon.label,
+				name = weapon.name,
+				components = components,
+				price = data.price,
+				hasWeapon = hasWeapon
+			}
 		end
-	end)
+
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory_buy_weapons', {
+			title    = _U('armory_weapontitle'),
+			align    = 'top-right',
+			elements = elements
+		}, function(data, menu)
+			if data.current.hasWeapon then
+				if #data.current.components > 0 then
+					OpenWeaponComponentShop(data.current.components, data.current.name, menu)
+				end
+			else
+				ESX.TriggerServerCallback('esx_policejob:buyWeapon', function(bought)
+					if bought then
+						if data.current.price > 0 then
+							ESX.ShowNotification(_U('armory_bought', data.current.weaponLabel, ESX.Math.GroupDigits(data.current.price)))
+						end
+
+						menu.close()
+						OpenBuyWeaponsMenu()
+					else
+						ESX.ShowNotification(_U('armory_money'))
+					end
+				end, data.current.name, 1)
+			end
+		end, function(data, menu)
+			menu.close()
+		end)
+	end
 end
 
 function OpenWeaponComponentShop(components, weaponName, parentShop)
