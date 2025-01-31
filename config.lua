@@ -31,10 +31,12 @@ Config.PoliceStations         = {
 		Job = 'police',
 		Blip = { enable = true, title = '', Coords = vector3(425.1, -979.5, 30.7), Sprite = 60, Display = 4, Scale = 1.2, Colour = 29 },
 		Cloakrooms = {
-			vector3(452.6, -992.8, 30.6)
+			enable = true,
+			coords = vector3(451.8246, -992.9867, 30.6896)
 		},
 
 		Armories = {
+			enable = true,
 			weapons = {
 				[1] = { name = 'WEAPON_APPISTOL', components = { 0, 0, 1000, 4000, nil }, price = 1000, min_rank = 0 },
 				[2] = { name = 'WEAPON_NIGHTSTICK', price = 1000, min_rank = 0 },
@@ -50,7 +52,7 @@ Config.PoliceStations         = {
 
 		Garages = {
 			[1] = {
-				Spawner = vector3(454.6, -1017.4, 28.4),
+				SpawnerMenu = vector3(454.6, -1017.4, 28.4),
 				InsideShop = vector3(228.5, -993.5, -99.5),
 				Vehicles = {
 					[1] = { label = 'police3', name = 'police3', livery = 0, min_rank = 1 },
@@ -67,6 +69,7 @@ Config.PoliceStations         = {
 		},
 
 		BossActions = {
+			enable = true,
 			canwash = true,
 			coords = vector3(452.6, -992.8, 30.6)
 		}
